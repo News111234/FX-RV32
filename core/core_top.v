@@ -38,38 +38,8 @@ module core_top #(
 wire [31:0] mipr;
 wire [31:0] meipr;
 
-// ==========================================================================
-// 外部中断子优先级选择器 (组合逻辑, 不增加中断延迟)
-// 由 meipr CSR 独立配置 GPIO/SPI/I2C 优先级 (4-bit each, 0=禁用)
-// 默认: GPIO=11 > SPI=7 > I2C=3 (与硬编码默认一致)
-// 选择器同时产出: 选中源优先级值 mei_priority 与外部中断信号 intr_external
-// ==========================================================================
-wire [3:0] gpio_prio = meipr[3:0];
-wire [3:0] spi_prio  = meipr[7:4];
-wire [3:0] i2c_prio  = meipr[11:8];
-
-wire       gpio_active = extr_gpio_i && (gpio_prio > 4'd0);
-wire       spi_active  = extr_spi_i  && (spi_prio  > 4'd0);
-wire       i2c_active  = extr_i2c_i  && (i2c_prio  > 4'd0);
-
-// 选择信号: 每个源的选中标志 (active 且优先级不低于其它 pending 源)
-// 同优先级 tie-break: GPIO > SPI > I2C (else-if 链天然保证)
-wire gpio_sel = gpio_active && (!spi_active || gpio_prio >= spi_prio)
-                             && (!i2c_active || gpio_prio >= i2c_prio);
-wire spi_sel  = !gpio_sel && spi_active && (!i2c_active || spi_prio >= i2c_prio);
-wire i2c_sel  = !gpio_sel && !spi_sel && i2c_active;
-
-// 3→1 选择: 输出选中源的优先级值
-wire [3:0] mei_priority = gpio_sel ? gpio_prio :
-                          spi_sel  ? spi_prio  :
-                          i2c_sel  ? i2c_prio  :
-                          4'd0;
-
-// 外部中断信号: 有选中源即拉高 (选择器直接产生, 无需 OR 门)
-wire intr_external = gpio_sel | spi_sel | i2c_sel;
-
-// 覆盖 MEI 优先级: 外部子优先级仲裁结果优先于 mipr[11:8]
-wire [31:0] ctl_mipr = {24'b0, mei_priority, mipr[7:0]};
+// 外部中断子优先级选择器位于 interrupt_controller 内部 (由 meipr CSR 配置)
+wire intr_external;   // 外部中断有效标志 (interrupt_controller 输出, 供 csr_regfile mip[11])
 
 // ==========================================================================
 // 内部信号定义——各级流水线信号、控制信号、转发信号等
@@ -660,7 +630,7 @@ csr_regfile u_csr_regfile (
     .csr_mtval_data_i   (wb_exception_addr),
     .intr_software_i    (intr_software_i),
     .intr_timer_i       (intr_timer_i),
-    .intr_external_i    (intr_external_i),
+    .intr_external_i    (intr_external),   // 来自 interrupt_controller 的选中标志
     .mtvec_o            (mtvec),
     .mepc_o             (mepc),
     .mcause_o           (mcause),
@@ -699,15 +669,19 @@ interrupt_controller u_interrupt_controller (
     .rst_n_i            (rst_n_i),
     .intr_software_i    (intr_software_i),
     .intr_timer_i       (intr_timer_i),
-    .intr_external_i    (intr_external_i),
+    .extr_gpio_i        (extr_gpio_i),
+    .extr_spi_i         (extr_spi_i),
+    .extr_i2c_i         (extr_i2c_i),
     .mie_i              (mie),
     .mip_i              (mip),
     .mstatus_i          (mstatus),
     .mtvec_i            (mtvec),
-    .mipr_i             (ctl_mipr),
+    .mipr_i             (mipr),
+    .meipr_i            (meipr),
     .intr_pending_o     (intr_pending),
     .intr_cause_o       (intr_cause),
     .intr_handler_addr_o(intr_handler_addr),
+    .intr_external_o    (intr_external),
     .current_priority_o (current_priority),
     .new_priority_o     (new_priority)
 );

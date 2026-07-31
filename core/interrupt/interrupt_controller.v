@@ -18,24 +18,28 @@ module interrupt_controller (
     input  wire        clk_i,             // 时钟信号
     input  wire        rst_n_i,           // 复位信号 (低电平有效)
 
-    // ========== 外部中断源 ==========
+    // ========== 外部中断源 (GPIO/SPI/I2C, 内部做子优先级选择) ==========
     input  wire        intr_software_i,   // 软件中断
     input  wire        intr_timer_i,      // 定时器中断
-    input  wire        intr_external_i,    // 外部中断 (GPIO | SPI | I2C OR-ed in core_top)
+    input  wire        extr_gpio_i,       // GPIO 外部中断
+    input  wire        extr_spi_i,        // SPI 外部中断
+    input  wire        extr_i2c_i,        // I2C 外部中断
 
     // ========== CSR接口 ==========
     input  wire [31:0] mie_i,             // 中断使能寄存器
     input  wire [31:0] mip_i,             // 中断待处理寄存器
     input  wire [31:0] mstatus_i,         // 机器状态寄存器
     input  wire [31:0] mtvec_i,           // 中断向量基址寄存器
-    input  wire [31:0] mipr_i,            // 中断优先级寄存器
+    input  wire [31:0] mipr_i,            // 中断优先级寄存器 (MTI[7:4] MSI[3:0])
+    input  wire [31:0] meipr_i,           // 外部中断子优先级 (I2C[11:8] SPI[7:4] GPIO[3:0])
 
     // ========== 中断控制器输出 ==========
     output wire        intr_pending_o,     // 有中断等待 (需要响应)
     output wire [31:0] intr_cause_o,       // 中断原因 (最高位=1表示中断)
     output wire [31:0] intr_handler_addr_o,// 中断处理程序入口地址
+    output wire        intr_external_o,    // 外部中断有效标志 (选中源, 供 mip[11])
 
-    // ========== 优先级输出 (给抢占判定) ==========
+    // ========== 优先级输出 (给bank_controller) ==========
     output wire [3:0]  current_priority_o, // 当前服务中断优先级
     output wire [3:0]  new_priority_o      // 新中断优先级
 
@@ -44,15 +48,44 @@ module interrupt_controller (
 // ========== 中断优先级编码 (可编程优先级) ==========
 // 中断ID: 3=MSI, 7=MTI, 11=MEI
 // 每个中断源的优先级由 mipr CSR 的 4-bit 字段独立配置 (0=禁用)
-// 默认值 mipr[11:8]=11(MEI), mipr[7:4]=7(MTI), mipr[3:0]=3(MSI), 等效于原硬编码
+// 默认值 mipr[7:4]=7(MTI), mipr[3:0]=3(MSI); MEI 优先级由外部子优先级选择器产生
 // 同优先级时按 MEI > MTI > MSI 的固定顺序 tie-break
-// 外部中断在 core_top 层由 GPIO|SPI|I2C OR 而成
 
-wire [3:0] mei_prio = mipr_i[11:8];
 wire [3:0] mti_prio = mipr_i[7:4];
 wire [3:0] msi_prio = mipr_i[3:0];
 
-wire meip = mie_i[11] && (mip_i[11] || intr_external_i);
+// ========== 外部中断子优先级选择器 (组合逻辑) ==========
+// 由 meipr CSR 独立配置 GPIO/SPI/I2C 优先级 (4-bit each, 0=禁用)
+// 默认: GPIO=11 > SPI=7 > I2C=3 (与硬编码默认一致)
+// 选择器同时产出: 选中源优先级值 mei_priority 与外部中断信号 intr_external
+wire [3:0] gpio_prio = meipr_i[3:0];
+wire [3:0] spi_prio  = meipr_i[7:4];
+wire [3:0] i2c_prio  = meipr_i[11:8];
+
+wire       gpio_active = extr_gpio_i && (gpio_prio > 4'd0);
+wire       spi_active  = extr_spi_i  && (spi_prio  > 4'd0);
+wire       i2c_active  = extr_i2c_i  && (i2c_prio  > 4'd0);
+
+// 选择信号: 每个源的选中标志 (active 且优先级不低于其它 pending 源)
+// 同优先级 tie-break: GPIO > SPI > I2C (else-if 链天然保证)
+wire gpio_sel = gpio_active && (!spi_active || gpio_prio >= spi_prio)
+                             && (!i2c_active || gpio_prio >= i2c_prio);
+wire spi_sel  = !gpio_sel && spi_active && (!i2c_active || spi_prio >= i2c_prio);
+wire i2c_sel  = !gpio_sel && !spi_sel && i2c_active;
+
+// 3→1 选择: 输出选中源的优先级值 (作为 MEI 优先级)
+wire [3:0] mei_priority = gpio_sel ? gpio_prio :
+                          spi_sel  ? spi_prio  :
+                          i2c_sel  ? i2c_prio  :
+                          4'd0;
+
+// 外部中断信号: 有选中源即拉高 (选择器直接产生, 无需 OR 门)
+wire intr_external = gpio_sel | spi_sel | i2c_sel;
+assign intr_external_o = intr_external;
+
+wire [3:0] mei_prio = mei_priority;
+
+wire meip = mie_i[11] && (mip_i[11] || intr_external);
 wire mtip = mie_i[7]  && (mip_i[7]  || intr_timer_i);
 wire msip = mie_i[3]  && (mip_i[3]  || intr_software_i);
 
@@ -119,7 +152,7 @@ always @(posedge clk_i or negedge rst_n_i) begin
         current_priority <= 4'd0;
     end else begin
         // 简单跟踪: intr_pending上升沿时更新
-        // 提供当前/新中断优先级值
+        // 实际抢占逻辑在bank_controller中, 这里只提供优先级值
         if (intr_pending_o && current_priority == 4'd0) begin
             current_priority <= new_prio;  // 首次中断
         end else if (!intr_pending_o) begin
