@@ -57,7 +57,7 @@ wire [3:0] msi_prio = mipr_i[3:0];
 // ========== 外部中断子优先级选择器 (组合逻辑) ==========
 // 由 meipr CSR 独立配置 GPIO/SPI/I2C 优先级 (4-bit each, 0=禁用)
 // 默认: GPIO=11 > SPI=7 > I2C=3 (与硬编码默认一致)
-// 选择器同时产出: 选中源优先级值 mei_priority 与外部中断信号 intr_external
+// 思路: 未 active 的源优先级置 0, 直接比大小取最大值即为选中源
 wire [3:0] gpio_prio = meipr_i[3:0];
 wire [3:0] spi_prio  = meipr_i[7:4];
 wire [3:0] i2c_prio  = meipr_i[11:8];
@@ -66,21 +66,17 @@ wire       gpio_active = extr_gpio_i && (gpio_prio > 4'd0);
 wire       spi_active  = extr_spi_i  && (spi_prio  > 4'd0);
 wire       i2c_active  = extr_i2c_i  && (i2c_prio  > 4'd0);
 
-// 选择信号: 每个源的选中标志 (active 且优先级不低于其它 pending 源)
-// 同优先级 tie-break: GPIO > SPI > I2C (else-if 链天然保证)
-wire gpio_sel = gpio_active && (!spi_active || gpio_prio >= spi_prio)
-                             && (!i2c_active || gpio_prio >= i2c_prio);
-wire spi_sel  = !gpio_sel && spi_active && (!i2c_active || spi_prio >= i2c_prio);
-wire i2c_sel  = !gpio_sel && !spi_sel && i2c_active;
+// 候选优先级: 未 active 的源不参与比较
+wire [3:0] cand_gpio = gpio_active ? gpio_prio : 4'd0;
+wire [3:0] cand_spi  = spi_active  ? spi_prio  : 4'd0;
+wire [3:0] cand_i2c  = i2c_active  ? i2c_prio  : 4'd0;
 
-// 3→1 选择: 输出选中源的优先级值 (作为 MEI 优先级)
-wire [3:0] mei_priority = gpio_sel ? gpio_prio :
-                          spi_sel  ? spi_prio  :
-                          i2c_sel  ? i2c_prio  :
-                          4'd0;
+// 比大小: 最大值即选中源优先级 (tie-break: 同优先级时 GPIO > SPI > I2C, 由 >= 链保证)
+wire [3:0] mei_priority = (cand_gpio >= cand_spi && cand_gpio >= cand_i2c) ? cand_gpio :
+                          (cand_spi >= cand_i2c) ? cand_spi : cand_i2c;
 
-// 外部中断信号: 有选中源即拉高 (选择器直接产生, 无需 OR 门)
-wire intr_external = gpio_sel | spi_sel | i2c_sel;
+// 外部中断信号: 有选中源即拉高 (mei_priority != 0 ⟺ 有 active 源)
+wire intr_external = (mei_priority != 4'd0);
 assign intr_external_o = intr_external;
 
 wire [3:0] mei_prio = mei_priority;
