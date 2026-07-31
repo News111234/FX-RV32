@@ -1,0 +1,48 @@
+FX-RV32 RV32I Test Cycle Counts (first WB to first non-zero gp store)
+Clock: 200MHz (5ns/cycle)
+Date: 2026-06-07 11:42
+
+Test                          Cycles
+------------------------- ----------
+add                              N/A
+addi                             N/A
+and                              N/A
+andi                             N/A
+auipc                            N/A
+beq                              N/A
+bge                              N/A
+bgeu                             N/A
+blt                              N/A
+bltu                             N/A
+bne                              N/A
+fence_i                          N/A
+jal                              N/A
+jalr                             N/A
+lb                               N/A
+lbu                              N/A
+ld_st                            N/A
+lh                               N/A
+lhu                              N/A
+lui                              N/A
+lw                               N/A
+ma_data                          N/A
+or                               N/A
+ori                              N/A
+sb                               N/A
+sh                               N/A
+simple                           N/A
+sll                              N/A
+slli                             N/A
+slt                              N/A
+slti                             N/A
+sltiu                            N/A
+sltu                             N/A
+sra                              N/A
+srai                             N/A
+srl                              N/A
+srli                             N/A
+st_ld                            N/A
+sub                              N/A
+sw                               N/A
+xor                              N/A
+xori                             N/A

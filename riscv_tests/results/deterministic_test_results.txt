@@ -1,0 +1,48 @@
+FX-RV32 RV32I Deterministic Test Results (5 runs/test)
+Date: 2026-06-08 18:00:03
+AUIPC: not fixed | ECALL1: NOP | ECALL2: J_SELF | ECALL3 (PASS): preserved
+
+Test                          Cycles        Avg      Stdev   Det
+------------------------- ---------- ---------- ---------- -----
+add                              544      544.0        0.0   YES
+addi                             303      303.0        0.0   YES
+and                              564      564.0        0.0   YES
+andi                             259      259.0        0.0   YES
+auipc                            111      111.0        0.0   YES
+beq                              392      392.0        0.0   YES
+bge                              428      428.0        0.0   YES
+bgeu                             453      453.0        0.0   YES
+blt                              392      392.0        0.0   YES
+bltu                             417      417.0        0.0   YES
+bne                              396      396.0        0.0   YES
+fence_i                          551      551.0        0.0   YES
+jal                              108      108.0        0.0   YES
+jalr                             188      188.0        0.0   YES
+lb                               317      317.0        0.0   YES
+lbu                              317      317.0        0.0   YES
+ld_st                           1161     1161.0        0.0   YES
+lh                               333      333.0        0.0   YES
+lhu                              342      342.0        0.0   YES
+lui                              114      114.0        0.0   YES
+lw                               347      347.0        0.0   YES
+ma_data                           99       99.0        0.0   YES
+or                               567      567.0        0.0   YES
+ori                              266      266.0        0.0   YES
+sb                               543      543.0        0.0   YES
+sh                               596      596.0        0.0   YES
+simple                            88       88.0        0.0   YES
+sll                              572      572.0        0.0   YES
+slli                             302      302.0        0.0   YES
+slt                              538      538.0        0.0   YES
+slti                             298      298.0        0.0   YES
+sltiu                            298      298.0        0.0   YES
+sltu                             538      538.0        0.0   YES
+sra                              591      591.0        0.0   YES
+srai                             317      317.0        0.0   YES
+srl                              585      585.0        0.0   YES
+srli                             311      311.0        0.0   YES
+st_ld                            532      532.0        0.0   YES
+sub                              536      536.0        0.0   YES
+sw                               603      603.0        0.0   YES
+xor                              566      566.0        0.0   YES
+xori                             268      268.0        0.0   YES

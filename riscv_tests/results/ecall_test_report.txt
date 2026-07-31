@@ -1,0 +1,49 @@
+FX-RV32 RV32I WITH ECALL - RISC-V Official Test Results
+Date: 2026-06-07 14:28 | Clock: 200MHz
+Method: relocated ELF (0x80000000->0x00000000), no other patches
+Measurement: first WB to first non-zero gp store (write_tohost trap)
+
+Test                       gp     Cycles       WB       ST     LD    Stall     MM   Time
+-------------------- -------- ---------- -------- -------- ------ -------- ------ ------
+add                       N/A        N/A    28600    28548      0        0      0    17
+addi                      N/A        N/A    28600    28548      0        0      0    18
+and                       N/A        N/A    28600    28548      0        0      0    19
+andi                      N/A        N/A    28600    28548      0        0      0    19
+auipc                     N/A        N/A    28600    28548      0        0      0    19
+beq                       N/A        N/A    28600    28548      0        0      0    19
+bge                       N/A        N/A    28600    28548      0        0      0    18
+bgeu                      N/A        N/A    28600    28548      0        0      0    19
+blt                       N/A        N/A    28600    28548      0        0      0    18
+bltu                      N/A        N/A    28600    28548      0        0      0    18
+bne                       N/A        N/A    28600    28548      0        0      0    19
+fence_i                   N/A        N/A    28600    28548      0        0      0    18
+jal                       N/A        N/A    28600    28548      0        0      0    17
+jalr                      N/A        N/A    28600    28548      0        0      0    18
+lb                        N/A        N/A    28600    28548      0        0      0    18
+lbu                       N/A        N/A    28600    28548      0        0      0    16
+ld_st                     N/A        N/A    28600    28548      0        0      0    13
+lh                        N/A        N/A    28600    28548      0        0      0    13
+lhu                       N/A        N/A    28600    28548      0        0      0    13
+lui                       N/A        N/A    28600    28548      0        0      0    13
+lw                        N/A        N/A    28600    28548      0        0      0    13
+ma_data                   N/A        N/A    28600    28548      0        0      0    13
+or                        N/A        N/A    28600    28548      0        0      0    13
+ori                       N/A        N/A    28600    28548      0        0      0    13
+sb                        N/A        N/A    28600    28548      0        0      0    13
+sh                        N/A        N/A    28600    28548      0        0      0    13
+simple                    N/A        N/A    28600    28548      0        0      0    13
+sll                       N/A        N/A    28600    28548      0        0      0    13
+slli                      N/A        N/A    28600    28548      0        0      0    13
+slt                       N/A        N/A    28600    28548      0        0      0    13
+slti                      N/A        N/A    28600    28548      0        0      0    13
+sltiu                     N/A        N/A    28600    28548      0        0      0    13
+sltu                      N/A        N/A    28600    28548      0        0      0    13
+sra                       N/A        N/A    28600    28548      0        0      0    13
+srai                      N/A        N/A    28600    28548      0        0      0    13
+srl                       N/A        N/A    28600    28548      0        0      0    13
+srli                      N/A        N/A    28600    28548      0        0      0    13
+st_ld                     N/A        N/A    28600    28548      0        0      0    15
+sub                       N/A        N/A    28600    28548      0        0      0    18
+sw                        N/A        N/A    28600    28548      0        0      0    13
+xor                       N/A        N/A    28600    28548      0        0      0    13
+xori                      N/A        N/A    28600    28548      0        0      0    13
