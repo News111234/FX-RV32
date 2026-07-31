@@ -1,0 +1,32 @@
+# ===== 综合报告与生成物（不上传）=====
+syn/reports/
+syn/run_en0/
+syn/run_sh1/
+syn/reports_annotated_0.1/
+*.rpt
+*.ddc
+*.sdf
+*.sdc
+*_netlist.v
+*.syn
+
+# ===== Vivado 生成物 =====
+vivado/.Xil/
+vivado/RISCV_TEST/
+*.jou
+*.log
+*.str
+
+# ===== 仿真生成物 =====
+sim/diary/
+sim/*.vcd
+sim/*.wlf
+sim/obj_dir/
+sim/work/
+sim/unknown.png
+
+# ===== 系统文件 =====
+~$*
+Thumbs.db
+.DS_Store
+reports_fxrv32_20260731.tar.gz

@@ -1,0 +1,1 @@
+source /opt/eda/synopsys/syn.bashrc
